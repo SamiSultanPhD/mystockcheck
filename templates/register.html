@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" type="text/css"
+      href="{{ url_for('static',
+             filename='styles/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth__page">
+    <h1>Register</h1>
+    <form method="POST" class="auth__form">
+        <label for="username">Username</label>
+        <input type="text"
+               id="username"
+               name="username"
+               required>
+
+        <label for="email">Email</label>
+        <input type="email"
+               id="email"
+               name="email"
+               required>
+
+        <label for="password">Password</label>
+        <input type="password"
+               id="password"
+               name="password"
+               required>
+
+        <label for="confirm_password">
+            Confirm password
+        </label>
+        <input type="password"
+               id="confirm_password"
+               name="confirm_password"
+               required>
+
+        <button type="submit">Register</button>
+    </form>
+    <p class="auth__link">
+        Already have an account?
+        <a href="{{ url_for('login') }}">
+            Login
+        </a>
+    </p>
+</div>
+{% endblock %}

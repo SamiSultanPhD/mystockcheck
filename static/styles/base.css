@@ -4,10 +4,8 @@ body {
         199,
         231
     );
-
     text-align: center;
 }
-
 
 button,
 input {
@@ -16,14 +14,10 @@ input {
         226,
         255
     );
-
     border: none;
-
     font-size: 16px;
-
     margin: 3px;
 }
-
 
 button:hover,
 input:hover {
@@ -32,11 +26,24 @@ input:hover {
         214,
         255
     );
-
     cursor: pointer;
 }
 
-
 a {
     text-decoration: none;
+}
+
+.flash__messages {
+    text-align: center;
+    padding: 0.5em;
+}
+
+.flash__message {
+    background-color: rgb(
+        255, 220, 220
+    );
+    padding: 10px;
+    margin: 5px auto;
+    max-width: 400px;
+    border-radius: 4px;
 }

@@ -1,0 +1,48 @@
+.admin__page {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.admin__table__container {
+    margin-top: 1em;
+    overflow-x: auto;
+}
+
+.admin__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+}
+
+.admin__table th,
+.admin__table td {
+    padding: 10px;
+    border: 1px solid black;
+    text-align: center;
+}
+
+.admin__table th {
+    background-color: rgb(
+        233, 226, 255
+    );
+}
+
+.admin__inline__form {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    align-items: center;
+}
+
+.admin__inline__form input {
+    width: 120px;
+    padding: 5px;
+}
+
+.admin__inline__form select {
+    padding: 5px;
+}
+
+.admin__inline__form button {
+    padding: 5px 10px;
+}

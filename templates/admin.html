@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Admin{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" type="text/css"
+      href="{{ url_for('static',
+             filename='styles/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin__page">
+    <h1>Admin</h1>
+    <p>{{ user_data | length }} registered users</p>
+
+    <div class="admin__table__container">
+        <table class="admin__table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Recipes</th>
+                    <th>Change role</th>
+                    <th>Reset password</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in user_data %}
+                <tr>
+                    <td>{{ entry.user.username }}</td>
+                    <td>{{ entry.user.email }}</td>
+                    <td>{{ entry.user.role }}</td>
+                    <td>{{ entry.recipe_count }}</td>
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for(
+                                  'admin_update_role'
+                              ) }}"
+                              class="admin__inline__form">
+                            <input type="hidden"
+                                   name="user_id"
+                                   value="{{ entry.user.id }}">
+                            <select name="role">
+                                <option value="free"
+                                    {% if entry.user.role == 'free' %}
+                                        selected
+                                    {% endif %}>
+                                    Free
+                                </option>
+                                <option value="member"
+                                    {% if entry.user.role == 'member' %}
+                                        selected
+                                    {% endif %}>
+                                    Member
+                                </option>
+                                <option value="admin"
+                                    {% if entry.user.role == 'admin' %}
+                                        selected
+                                    {% endif %}>
+                                    Admin
+                                </option>
+                            </select>
+                            <button type="submit">
+                                Update
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="POST"
+                              action="{{ url_for(
+                                  'admin_reset_password'
+                              ) }}"
+                              class="admin__inline__form">
+                            <input type="hidden"
+                                   name="user_id"
+                                   value="{{ entry.user.id }}">
+                            <input type="text"
+                                   name="new_password"
+                                   placeholder="New password"
+                                   required>
+                            <button type="submit">
+                                Reset
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

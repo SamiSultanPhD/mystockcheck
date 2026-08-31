@@ -1,34 +1,69 @@
 <!DOCTYPE html>
-<html lang = "en">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
-    <!-- <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/base.css') }}"> -->
-    <!-- Input relevent styles for each HTML page-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/base.css') }}">
+    <link rel="stylesheet" type="text/css"
+          href="{{ url_for('static', filename='styles/base.css') }}">
     {% block styles %}{% endblock %}
-
-    <!-- Links to Flask function which renders the corresponding HTML file-->
     <nav>
         <div class="navigation__container">
-            <a href="{{ url_for('home') }}">
-                <button class="navigation">Shopping list</button>
-            </a>
-
-            <a href="{{ url_for('newrecipe') }}">
-                <button class="navigation">New Recipe</button>
-            </a>
-
-            <a href="{{ url_for('ingredients') }}">
-                <button class="navigation">Ingredients</button>
-            </a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('home') }}">
+                    <button class="navigation">
+                        Shopping list
+                    </button>
+                </a>
+                <a href="{{ url_for('newrecipe') }}">
+                    <button class="navigation">
+                        New Recipe
+                    </button>
+                </a>
+                <a href="{{ url_for('ingredients') }}">
+                    <button class="navigation">
+                        Ingredients
+                    </button>
+                </a>
+                {% if current_user.role == 'admin' %}
+                    <a href="{{ url_for('admin') }}">
+                        <button class="navigation">
+                            Admin
+                        </button>
+                    </a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">
+                    <button class="navigation">
+                        Logout ({{ current_user.username }})
+                    </button>
+                </a>
+            {% else %}
+                <a href="{{ url_for('login') }}">
+                    <button class="navigation">
+                        Login
+                    </button>
+                </a>
+                <a href="{{ url_for('register') }}">
+                    <button class="navigation">
+                        Register
+                    </button>
+                </a>
+            {% endif %}
         </div>
     </nav>
-    
 </head>
 <body>
-    <!-- Input content for each HTML page-->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash__messages">
+                {% for message in messages %}
+                    <p class="flash__message">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     {% block content %}{% endblock %}
 </body>
 </html>

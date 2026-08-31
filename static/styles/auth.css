@@ -1,0 +1,32 @@
+.auth__page {
+    max-width: 400px;
+    margin: 2em auto;
+    padding: 2em;
+}
+
+.auth__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.auth__form label {
+    font-weight: bold;
+    margin-top: 0.5em;
+}
+
+.auth__form input {
+    padding: 10px;
+    font-size: 16px;
+}
+
+.auth__form button {
+    margin-top: 1em;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.auth__link {
+    margin-top: 1em;
+}
