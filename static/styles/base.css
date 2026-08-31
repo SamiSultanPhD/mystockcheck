@@ -1,20 +1,42 @@
-body{
-    background-color: rgb(167, 199, 231);
+body {
+    background-color: rgb(
+        167,
+        199,
+        231
+    );
+
     text-align: center;
 }
 
-button, input{
-    background-color: rgb(233, 226, 255);
+
+button,
+input {
+    background-color: rgb(
+        233,
+        226,
+        255
+    );
+
     border: none;
+
     font-size: 16px;
+
     margin: 3px;
 }
 
-button:hover, input:hover{
-    background-color: rgb(224, 214, 255);
+
+button:hover,
+input:hover {
+    background-color: rgb(
+        224,
+        214,
+        255
+    );
+
     cursor: pointer;
-  }
+}
+
 
 a {
     text-decoration: none;
-  }
+}

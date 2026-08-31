@@ -1,68 +1,252 @@
 {% extends "base.html" %}
-{% block title %}New recipe{% endblock %}
-{% block styles %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/new_recipe.css') }}">
+
+
+{% block title %}
+New recipe
 {% endblock %}
+
+
+{% block styles %}
+
+<link
+    rel="stylesheet"
+    type="text/css"
+    href="{{ url_for(
+        'static',
+        filename='styles/new_recipe.css'
+    ) }}"
+>
+
+{% endblock %}
+
+
 {% block content %}
+
+
 <div class="new__recipe__title">
-    <h2>New recipe name:</h2>
-    <input id="new__recipe__name" oninput="validateTextInput(this)">
-    <h3>How many days is this meal for?</h3>
-    <input id="meal__days" oninput="validateNumberInput(this)">
-    <h3>Enter group number (default is 0)-</h3>
-    <input id="meal__group" oninput="validateNumberInput(this)">
-    <h3>Is this a complete meal?</h3>
-      <select name="Complete meal" id="complete__meal"> 
-        <option value="Yes">Yes</option> 
-        <option value="No">No</option> 
+
+    <h2>
+        New recipe name:
+    </h2>
+
+
+    <input
+        id="new__recipe__name"
+        oninput="validateTextInput(this)"
+    >
+
+
+    <h3>
+        How many days is this meal for?
+    </h3>
+
+
+    <input
+        id="meal__days"
+        oninput="validateNumberInput(this)"
+    >
+
+
+    <h3>
+        Is this a complete meal?
+    </h3>
+
+
+    <select
+        name="Complete meal"
+        id="complete__meal"
+    >
+
+        <option value="Yes">
+            Yes
+        </option>
+
+        <option value="No">
+            No
+        </option>
+
     </select>
+
 </div>
 
+
 <div id="ingredientContainer">
+
     <div class="new__recipe__content">
-      <div class="new__recipe__content__format">
-        <h3>Ingredient:</h3>
-        <input id="new__recipe__ingredient" list="PreviousIngredients" oninput="validateTextInput(this)">
-          <datalist id="PreviousIngredients">
-            {% for ingredient in previous_ingredients %}
-              <option value="{{ ingredient }}">{{ ingredient }}</option>
-            {% endfor %}
-          </datalist>
-        <h3>Quantity:</h3>
-        <input min="0" step="0.25" id="new__recipe__quantity"  oninput="validateNumberInput(this)">
-        <h3>Units:</h3>
-        <select name="Measure" id="measure__name"> 
-          <option value="Absolute">Absolute</option> 
-          <option value="Tea spoon">Tea Spoon</option> 
-          <option value="Table spoon">Table Spoon</option>
-          <option value="Cup">Cup</option>
-          <option value="Bowl">Bowl</option>
-          <option value="g">g</option>
-          <option value="ml">ml</option> 
-          <option value="approximately">Approximately</option>
-        </select>
-        <h3>Type of ingredient:</h3>
-          <select name="type" id="ingredient__type"> 
-            <option value="Other">Other</option> 
-            <option value="Fresh">Fresh</option> 
-            <option value="Fruit">Fruit</option>
-            <option value="Vegetable">Vegetable</option>
-        </select>
-      
+
+        <div class="new__recipe__content__format">
+
+            <h3>
+                Ingredient:
+            </h3>
+
+
+            <input
+                id="new__recipe__ingredient"
+                list="PreviousIngredients"
+                oninput="validateTextInput(this)"
+            >
+
+
+            <datalist id="PreviousIngredients">
+
+                {% for ingredient in previous_ingredients %}
+
+                    <option value="{{ ingredient }}">
+                        {{ ingredient }}
+                    </option>
+
+                {% endfor %}
+
+            </datalist>
+
+
+            <h3>
+                Quantity:
+            </h3>
+
+
+            <input
+                min="0"
+                step="0.25"
+                id="new__recipe__quantity"
+                oninput="validateNumberInput(this)"
+            >
+
+
+            <h3>
+                Units:
+            </h3>
+
+
+            <select
+                name="Measure"
+                id="measure__name"
+            >
+
+                <option value="Absolute">
+                    Absolute
+                </option>
+
+                <option value="Tea spoon">
+                    Tea Spoon
+                </option>
+
+                <option value="Table spoon">
+                    Table Spoon
+                </option>
+
+                <option value="Cup">
+                    Cup
+                </option>
+
+                <option value="Bowl">
+                    Bowl
+                </option>
+
+                <option value="g">
+                    g
+                </option>
+
+                <option value="ml">
+                    ml
+                </option>
+
+                <option value="approximately">
+                    Approximately
+                </option>
+
+            </select>
+
+
+            <h3>
+                Type of ingredient:
+            </h3>
+
+
+            <select
+                name="type"
+                id="ingredient__type"
+            >
+
+                <option value="Other">
+                    Other
+                </option>
+
+                <option value="Fresh">
+                    Fresh
+                </option>
+
+                <option value="Fruit">
+                    Fruit
+                </option>
+
+                <option value="Vegetable">
+                    Vegetable
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <input
+            type="button"
+            class="button__remove__ingredient"
+            value="Remove ingredient"
+        >
+
     </div>
-      <input type="submit" class="button__remove__ingredient" value="Remove ingredient">
-    </div>
-  </div>
 
-  <div id="button__new__ingredient__container">
-    <input type="submit" id="button__new__ingredient" value="New ingredient">
-  </div>
+</div>
 
-  <form id="new__recipe__submit">
-    <button type="submit" id="button__submit" value="submit_new_recipe">Submit</button>
-  </form>
 
-<script src="{{url_for ('static', filename='styles/add_remove_ingredient.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/values_only.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/submit_button.js')}}"></script>
+<div id="button__new__ingredient__container">
+
+    <input
+        type="button"
+        id="button__new__ingredient"
+        value="New ingredient"
+    >
+
+</div>
+
+
+<form id="new__recipe__submit">
+
+    <button
+        type="submit"
+        id="button__submit"
+        value="submit_new_recipe"
+    >
+        Submit
+    </button>
+
+</form>
+
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/add_remove_ingredient.js'
+    ) }}"
+></script>
+
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/values_only.js'
+    ) }}"
+></script>
+
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/submit_button.js'
+    ) }}"
+></script>
+
+
 {% endblock %}

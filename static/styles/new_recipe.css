@@ -1,17 +1,51 @@
-/* Set the defult diplay of the button__remove__ingredient*/
-.new__recipe__content{
+/*
+ * Template used when creating a new ingredient.
+ *
+ * It is hidden until the user presses
+ * "New ingredient".
+ */
+
+.new__recipe__content {
     display: none;
 }
 
-#ingredientContainer{
+
+#ingredientContainer {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+
+    grid-template-columns:
+        repeat(
+            auto-fill,
+            minmax(200px, 1fr)
+        );
+
     grid-gap: 1em;
+
     padding-top: 1em;
     padding-bottom: 1em;
 }
 
-.new__recipe__content__format, .update__recipe__content{
+
+.new__recipe__content__format,
+.update__recipe__content {
     padding-top: 1em;
-    background-color: rgb(178, 251, 165);
+
+    background-color:
+        rgb(
+            178,
+            251,
+            165
+        );
+}
+
+
+.update__recipe__content__format {
+    padding-top: 1em;
+
+    background-color:
+        rgb(
+            178,
+            251,
+            165
+        );
 }

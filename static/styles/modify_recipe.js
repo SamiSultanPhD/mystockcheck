@@ -1,36 +1,123 @@
-// As the buttons are being created through a for loop to extract the information from the Flask framework, a list of all buttons is created
-let modify_btns = document.querySelectorAll(".modification__button");
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
 
-// A listener is then added to each button before executing the deletefunction
-modify_btns.forEach(modify_btn => {
+        let modify_btns =
+            document.querySelectorAll(
+                ".modification__button"
+            );
 
-   modify_btn.addEventListener('click', async (event)=> {
 
-    event.preventDefault();
-    
-    await modifyfunction(modify_btn.value);
-  });
-});
-  
-async function modifyfunction(buttonValue) {
-  /** 
-  * Passes the button id to the flask framework
-  * Expects: activation of modification button, string: button id
-  * Action: POST button id to the Flask framework
-  * Returns: none.
-  */
+        modify_btns.forEach(
+            function (modify_btn) {
 
-    var formData = new FormData();
-    formData.append('button', buttonValue);
-    formData.append('request_type', 'modify_recipe');
+                modify_btn.addEventListener(
+                    "click",
+                    async function (event) {
 
-    return fetch('/', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        window.location.href = "http://127.0.0.1:5000/" + data + "/";
-      })
-        .catch(error => console.error(error));
-  }
+                        event.preventDefault();
+
+
+                        await modifyfunction(
+                            modify_btn.value
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        async function modifyfunction(
+            recipeNumber
+        ) {
+
+            var formData =
+                new FormData();
+
+
+            formData.append(
+                "button",
+                recipeNumber
+            );
+
+
+            formData.append(
+                "request_type",
+                "modify_recipe"
+            );
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                /*
+                 * Flask returns the recipe number.
+                 *
+                 * We then need to find the recipe name
+                 * to construct the URL.
+                 */
+
+                const recipeCard =
+                    document.querySelector(
+                        '[data-recipe-number="' +
+                        data +
+                        '"]'
+                    );
+
+
+                if (!recipeCard) {
+
+                    throw new Error(
+                        "Recipe could not be found."
+                    );
+
+                }
+
+
+                const recipeTitle =
+                    recipeCard.querySelector(
+                        ".recipe__title"
+                    );
+
+
+                const recipeName =
+                    recipeTitle.textContent.trim();
+
+
+                window.location.href =
+                    "/" +
+                    data +
+                    "_" +
+                    encodeURIComponent(
+                        recipeName
+                    ) +
+                    "/";
+
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+            }
+
+        }
+
+    }
+);

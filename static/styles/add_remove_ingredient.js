@@ -1,65 +1,147 @@
-    // Using the DOMContentLoaded event is a common practice in web development to ensure that JavaScript code that interacts with the 
-    // DOM is executed only after the DOM is fully ready. It helps prevent issues where JavaScript attempts to manipulate elements that 
-    //haven't been created yet. 
-    document.addEventListener("DOMContentLoaded", function () {
-        const ingredientContainer = document.getElementById("ingredientContainer");
-        const newIngredientButton = document.getElementById("button__new__ingredient");
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const ingredientContainer =
+            document.getElementById(
+                "ingredientContainer"
+            );
 
 
-        // Function to find the nearest ancestor with a specific class
-        function findParentContainer(element, className) {
-          while (element && element !== document) {
-            if (element.classList.contains(className)) {
-              return element;
+        const newIngredientButton =
+            document.getElementById(
+                "button__new__ingredient"
+            );
+
+
+        /*
+         * Remove an ingredient.
+         */
+
+        ingredientContainer.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    !event.target.classList.contains(
+                        "button__remove__ingredient"
+                    )
+                ) {
+
+                    return;
+
+                }
+
+
+                const contentInstance =
+                    event.target.closest(
+                        ".new__recipe__content"
+                    );
+
+
+                const updateContentInstance =
+                    event.target.closest(
+                        ".update__recipe__content"
+                    );
+
+
+                if (contentInstance) {
+
+                    contentInstance.remove();
+
+                }
+
+
+                else if (
+                    updateContentInstance
+                ) {
+
+                    updateContentInstance.remove();
+
+                }
+
             }
-            element = element.parentNode;
-          }
-          return null; // Return null if no element with the specified class is found
-        }
-
-        // Function to handle the removal of a content instance
-          function removeContentInstance(event) {
-              const contentInstance = findParentContainer(event.target, 'new__recipe__content');
-              if (contentInstance) {
-                  contentInstance.remove();
-              } else {
-                  const updateContentInstance = findParentContainer(event.target, 'update__recipe__content');
-                  if (updateContentInstance) {
-                      updateContentInstance.remove();
-                  }
-              }
-          }
+        );
 
 
-        newIngredientButton.addEventListener("click", function () {
-            // Clone the template content
-            const newContent = document.querySelector(".new__recipe__content").cloneNode(true);
-        
-            // Clear only the input fields (excluding buttons) in the cloned content
-            const ClearIngredient = newContent.querySelector("#new__recipe__ingredient");
-            if (ClearIngredient) {
-              ClearIngredient.value = "";
+        /*
+         * Add a new ingredient.
+         */
+
+        newIngredientButton.addEventListener(
+            "click",
+            function () {
+
+                /*
+                 * The hidden template is the
+                 * .new__recipe__content element.
+                 */
+
+                const template =
+                    document.querySelector(
+                        ".new__recipe__content"
+                    );
+
+
+                if (!template) {
+                    return;
+                }
+
+
+                const newContent =
+                    template.cloneNode(
+                        true
+                    );
+
+
+                /*
+                 * Clear the ingredient field.
+                 */
+
+                const ingredient =
+                    newContent.querySelector(
+                        "#new__recipe__ingredient"
+                    );
+
+
+                if (ingredient) {
+
+                    ingredient.value = "";
+
+                }
+
+
+                /*
+                 * Clear the quantity.
+                 */
+
+                const quantity =
+                    newContent.querySelector(
+                        "#new__recipe__quantity"
+                    );
+
+
+                if (quantity) {
+
+                    quantity.value = "";
+
+                }
+
+
+                /*
+                 * Make the new ingredient visible.
+                 */
+
+                newContent.style.display =
+                    "block";
+
+
+                ingredientContainer.appendChild(
+                    newContent
+                );
+
             }
+        );
 
-            const ClearQuantity = newContent.querySelector("#new__recipe__quantity");
-            if (ClearQuantity) {
-              ClearQuantity.value = "";
-            }
-
-
-            // Set the "Remove ingredient" button's display style to "inline" or "block"
-            const removeIngredientButton = newContent.querySelector(".button__remove__ingredient");
-            // removeIngredientButton.style.display = "block";
-            // Attach a click event handler to the "Remove ingredient" button in the cloned content
-            removeIngredientButton.addEventListener("click", removeContentInstance);
-
-            // Append the cloned content to the container
-            newContent.style.display = "block";
-            ingredientContainer.appendChild(newContent);
-        });
-        // Function to attach event listeners to existing "Remove ingredient" buttons
-        const existingRemoveButtons = document.querySelectorAll(".button__remove__ingredient");
-        existingRemoveButtons.forEach(button => {
-            button.addEventListener("click", removeContentInstance);
-        });
-      });
+    }
+);

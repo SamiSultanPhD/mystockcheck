@@ -1,0 +1,58 @@
+.ingredients__page {
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ingredients__page h1 {
+    margin-bottom: 0.25em;
+}
+
+.ingredients__table__container {
+    margin-top: 2em;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.ingredients__table {
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+    width: 80%;
+}
+
+.ingredients__table th,
+.ingredients__table td {
+    padding: 10px;
+    border: 1px solid black;
+}
+
+.ingredients__table th {
+    position: sticky;
+    top: 0;
+    background-color: rgb(233, 226, 255);
+}
+
+.ingredient__name {
+    width: 90%;
+    padding: 8px;
+}
+
+.ingredient__type {
+    padding: 8px;
+    font-size: 16px;
+}
+
+.ingredient__save__button {
+    padding: 8px 15px;
+}
+
+.ingredient__save__button:disabled {
+    cursor: wait;
+}
+
+#save__message {
+    min-height: 25px;
+    margin-top: 1em;
+    font-weight: bold;
+}

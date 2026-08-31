@@ -1,44 +1,160 @@
 {% extends "base.html" %}
-{% block title %}Shopping list{% endblock %}
-{% block styles %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/shopping_list.css') }}">
+
+{% block title %}
+Shopping list
 {% endblock %}
+
+{% block styles %}
+<link
+    rel="stylesheet"
+    type="text/css"
+    href="{{ url_for(
+        'static',
+        filename='styles/shopping_list.css'
+    ) }}"
+>
+{% endblock %}
+
 {% block content %}
-<div id="recipes">
-    <h1>Recipes</h1>
-    <div class="all__recipe__container">
-        {% for key, items in all_recipes.items() %}
-            <div class="recipe__container__full">
-                <div class="recipe__container">
-                    <h2 class="recipe__title">{{ key }}-</h2>
-                    {% for meta_items in meta_info[key] %}
-                    <h4>Number of days- {{ meta_items[2] }}</h4>
-                    <h4>Complete meal? {{ meta_items[3] }}</h4>
-                    <h4>Group number- {{ meta_items[1] }}</h4>
-                    {% endfor %}
-                    {% for item in items %}
-                        <table class="recipe__content">
-                            <tr> 
-                            <td>{{ item[1] }}:</td>
-                            <td>{{ item[2] }} {{ item[3] }} [{{ item[4] }}]</td>
-                            </tr>
-                        </table>
-                    {% endfor %}
+<div id="download__container" style="margin-top:1em;display:none;">
+    <button
+        type="button"
+        id="download__button"
+    >
+        Download shopping list
+    </button>
+</div>
+
+<div id="recipes__and__shopping__list">
+    <div id="recipes">
+        <h1>Recipes</h1>
+        <div
+            class="all__recipe__container"
+            id="recipeList"
+        >
+            {% for key, items in all_recipes.items() %}
+                {% set recipe_number = key.split('_', 1)[0] %}
+                {% set recipe_name = key.split('_', 1)[1] %}
+                <div
+                    class="recipe__container__full"
+                    draggable="true"
+                    data-recipe-number="{{ recipe_number }}"
+                >
+                    <div class="recipe__container">
+                        <div
+                            class="recipe__drag__handle"
+                            aria-label="Drag to reorder recipe"
+                        >
+                            ☰
+                        </div>
+                        <h2 class="recipe__title">
+                            {{ recipe_name }}
+                        </h2>
+                        {% for meta_items in meta_info[key] %}
+                            <h4>
+                                Number of days-
+                                {{ meta_items[0] }}
+                            </h4>
+                            <h4>
+                                Complete meal?
+                                {{ meta_items[1] }}
+                            </h4>
+                        {% endfor %}
+                        {% for item in items %}
+                            <table class="recipe__content">
+                                <tr>
+                                    <td>
+                                        {{ item[0] }}:
+                                    </td>
+                                    <td>
+                                        {{ item[1] }}
+                                        {{ item[2] }}
+                                        [{{ item[3] }}]
+                                    </td>
+                                </tr>
+                            </table>
+                        {% endfor %}
+                    </div>
+                    <button
+                        type="button"
+                        class="modification__button"
+                        value="{{ recipe_number }}"
+                    >
+                        Modify recipe
+                    </button>
+                    <button
+                        type="button"
+                        class="delete__button"
+                        value="{{ recipe_number }}"
+                    >
+                        Delete recipe
+                    </button>
                 </div>
-                <button type="submit" class="modification__button" value="{{ key }}">Modify recipe</button>
-                <button type="submit" class="delete__button" value="{{ key }}">Delete recipe</button>
-            </div>
-        {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div id="shopping__list">
+        <h1>Shopping list</h1>
+        <button
+            type="button"
+            id="clear__all__button"
+        >
+            Clear all
+        </button>
+        <div id="recipe__list">
+        </div>
+        <div id="table__container">
+        </div>
     </div>
 </div>
-<div id="shopping__list">
-    <h1>Shopping list</h1>
-    <div id="recipe__list"></div>
-    <div id="table__container"></div>
-</div>
-<script src="{{url_for ('static', filename='styles/values_only.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/button_colour.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/generate_shopping_list.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/modify_recipe.js')}}"></script>
-<script src="{{url_for ('static', filename='styles/delete_recipe.js')}}"></script>
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/values_only.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/button_colour.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/generate_shopping_list.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/modify_recipe.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/delete_recipe.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/reorder_recipes.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/download_shopping_list.js'
+    ) }}"
+></script>
+<script
+    src="{{ url_for(
+        'static',
+        filename='styles/clear_all.js'
+    ) }}"
+></script>
 {% endblock %}

@@ -1,39 +1,116 @@
-#recipes{
-    float: left;
-    width: 75%;
+/*
+ * Main layout: recipes on the left, shopping list
+ * on the right.  On smaller screens both stack
+ * vertically.
+ */
+#recipes__and__shopping__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    padding: 1em;
+}
+
+#recipes {
+    flex: 2 1 400px;
+    min-width: 0;
+}
+
+#shopping__list {
+    flex: 1 1 400px;
+    min-width: 0;
 }
 
 .all__recipe__container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(200px, 1fr)
+    );
     grid-gap: 1em;
-    padding: 2em;
+    padding: 1em 0;
 }
 
+/*
+ * The complete draggable recipe card.
+ */
+.recipe__container__full {
+    transition:
+        opacity 0.2s,
+        transform 0.2s;
+}
+
+/*
+ * Appearance while dragging.
+ */
+.recipe__container__full.dragging {
+    opacity: 0.4;
+    transform: scale(0.98);
+}
+
+/*
+ * Recipe card.
+ */
 .recipe__container {
     text-align: center;
     width: 100%;
-    /* Set a height for the container */
     height: 300px;
-    /* Add a vertical scrollbar when the content overflows */
     overflow-y: auto;
-    transition: background-color 0.3s; /* Add a smooth transition effect */
-    cursor: pointer; /* Change the cursor to a pointer on hover */
-    background-color: rgb(253, 253, 150);
+    transition: background-color 0.3s;
+    cursor: pointer;
+    background-color: rgb(
+        253,
+        253,
+        150
+    );
 }
 
-.recipe__content{
+/*
+ * Drag handle.
+ */
+.recipe__drag__handle {
+    font-size: 20px;
+    padding: 8px;
+    cursor: grab;
+    user-select: none;
+}
+
+.recipe__drag__handle:active {
+    cursor: grabbing;
+}
+
+/*
+ * Selected recipe.
+ */
+.recipe__container.clicked {
+    background-color: rgba(
+        255,
+        209,
+        220
+    );
+}
+
+/*
+ * Recipe ingredient table.
+ */
+.recipe__content {
     margin-left: auto;
     margin-right: auto;
 }
 
-.recipe__container.clicked {
-    background-color: rgba(255, 209, 220); /* Greyed out or transparent background color */
-}
-
+/*
+ * Shopping list table.
+ */
 #table__container table {
     margin-left: auto;
     margin-right: auto;
     border-spacing: 20px;
     text-align: center;
-  }
+}
+
+/*
+ * Buttons.
+ */
+.modification__button,
+.delete__button {
+    cursor: pointer;
+}

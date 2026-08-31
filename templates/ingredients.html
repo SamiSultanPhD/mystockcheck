@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Ingredients{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='styles/ingredients.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="ingredients__page">
+
+    <h1>Ingredients</h1>
+
+    <p>
+        Edit an ingredient name or type and press Update.
+        Changes to an ingredient name will be applied to every recipe
+        that uses that ingredient.
+    </p>
+
+    <div id="save__message"></div>
+
+    <div class="ingredients__table__container">
+
+        <table class="ingredients__table">
+
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Type</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in ingredients %}
+
+                <tr class="ingredient__row"
+                    data-original-ingredient="{{ item.ingredient }}">
+
+                    <td>
+                        <input
+                            type="text"
+                            class="ingredient__name"
+                            value="{{ item.ingredient }}"
+                        >
+                    </td>
+
+                    <td>
+                        <select class="ingredient__type">
+
+                            <option value="Other"
+                                {% if item.type == "Other" %}selected{% endif %}>
+                                Other
+                            </option>
+
+                            <option value="Fresh"
+                                {% if item.type == "Fresh" %}selected{% endif %}>
+                                Fresh
+                            </option>
+
+                            <option value="Fruit"
+                                {% if item.type == "Fruit" %}selected{% endif %}>
+                                Fruit
+                            </option>
+
+                            <option value="Vegetable"
+                                {% if item.type == "Vegetable" %}selected{% endif %}>
+                                Vegetable
+                            </option>
+
+                        </select>
+                    </td>
+
+                    <td>
+                        <button
+                            type="button"
+                            class="ingredient__save__button">
+                            Update
+                        </button>
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<script src="{{ url_for('static',
+             filename='styles/ingredients.js') }}"></script>
+
+{% endblock %}
