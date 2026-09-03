@@ -10,10 +10,11 @@ from flask_login import (
 from werkzeug.security import (
     generate_password_hash, check_password_hash
 )
+from datetime import datetime
 import os
 import re
 import sqlite3
-import webbrowser
+
 
 # ---------------------------------------------------------
 # Database setup
@@ -27,27 +28,18 @@ db_path = os.path.join(
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SECRET_KEY"] = os.environ.get(
-    "SECRET_KEY",
-    "change-this-to-a-random-secret-string"
+    "SECRET_KEY", "dev-fallback-key"
 )
 db = SQLAlchemy(app)
 
+
 # ---------------------------------------------------------
-# Login manager
+# Flask-Login setup
 # ---------------------------------------------------------
-login_manager = LoginManager(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
 login_manager.login_view = "login"
 
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-# ---------------------------------------------------------
-# Constants
-# ---------------------------------------------------------
-FREE_RECIPE_LIMIT = 6
 
 # ---------------------------------------------------------
 # Database models
@@ -58,12 +50,12 @@ class User(UserMixin, db.Model):
         primary_key=True
     )
     username = db.Column(
-        db.String(100),
+        db.String(80),
         unique=True,
         nullable=False
     )
     email = db.Column(
-        db.String(200),
+        db.String(120),
         unique=True,
         nullable=False
     )
@@ -82,11 +74,6 @@ class Recipes(db.Model):
     id = db.Column(
         db.Integer,
         primary_key=True
-    )
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("user.id"),
-        nullable=False
     )
     name = db.Column(
         db.String(1000)
@@ -125,10 +112,101 @@ class Recipes(db.Model):
     type = db.Column(
         db.String(20)
     )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id")
+    )
+
+
+class AppSettings(db.Model):
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    key = db.Column(
+        db.String(100),
+        unique=True,
+        nullable=False
+    )
+    value = db.Column(
+        db.String(500)
+    )
+
+
+class PasswordResetRequest(db.Model):
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    username = db.Column(
+        db.String(80),
+        nullable=False
+    )
+    email = db.Column(
+        db.String(120),
+        nullable=False
+    )
+    requested_at = db.Column(
+        db.DateTime,
+        nullable=False
+    )
+    pending = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# ---------------------------------------------------------
+# Create tables and default settings
+# ---------------------------------------------------------
+with app.app_context():
+    db.create_all()
+    if not AppSettings.query.filter_by(
+        key="free_recipe_limit"
+    ).first():
+        db.session.add(
+            AppSettings(
+                key="free_recipe_limit",
+                value="6"
+            )
+        )
+        db.session.commit()
+
 
 # ---------------------------------------------------------
 # Helper functions
 # ---------------------------------------------------------
+def get_setting(key, default=None):
+    setting = AppSettings.query.filter_by(
+        key=key
+    ).first()
+    if setting:
+        return setting.value
+    return default
+
+
+def get_free_recipe_limit():
+    limit = get_setting("free_recipe_limit", "6")
+    return int(limit)
+
+
+def get_user_recipe_count(user_id):
+    count = db.session.query(
+        db.func.count(
+            db.func.distinct(Recipes.number)
+        )
+    ).filter_by(
+        user_id=user_id
+    ).scalar()
+    return count or 0
+
+
 def get_recipe_sort_order(
     recipe_number, user_id
 ):
@@ -160,118 +238,6 @@ def get_next_sort_order(user_id):
         return 0
     return highest_sort_order + 1
 
-
-def get_user_recipe_count(user_id):
-    count = db.session.query(
-        db.func.count(
-            db.distinct(Recipes.number)
-        )
-    ).filter_by(
-        user_id=user_id
-    ).scalar()
-    return count or 0
-
-# ---------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------
-@app.route("/login/", methods=["GET", "POST"])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for("home"))
-
-    if request.method == "POST":
-        username = request.form.get(
-            "username", ""
-        ).strip()
-        password = request.form.get(
-            "password", ""
-        )
-
-        user = User.query.filter_by(
-            username=username
-        ).first()
-
-        if user and check_password_hash(
-            user.password_hash, password
-        ):
-            login_user(user)
-            return redirect(url_for("home"))
-
-        flash("Invalid username or password.")
-
-    return render_template("login.html")
-
-
-@app.route(
-    "/register/", methods=["GET", "POST"]
-)
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for("home"))
-
-    if request.method == "POST":
-        username = request.form.get(
-            "username", ""
-        ).strip()
-        email = request.form.get(
-            "email", ""
-        ).strip().lower()
-        password = request.form.get(
-            "password", ""
-        )
-        confirm = request.form.get(
-            "confirm_password", ""
-        )
-
-        if not username or not email or not password:
-            flash("All fields are required.")
-            return render_template("register.html")
-
-        if password != confirm:
-            flash("Passwords do not match.")
-            return render_template("register.html")
-
-        if len(password) < 4:
-            flash(
-                "Password must be at least"
-                " 4 characters."
-            )
-            return render_template("register.html")
-
-        if User.query.filter_by(
-            username=username
-        ).first():
-            flash("Username already taken.")
-            return render_template("register.html")
-
-        if User.query.filter_by(
-            email=email
-        ).first():
-            flash("Email already registered.")
-            return render_template("register.html")
-
-        new_user = User(
-            username=username,
-            email=email,
-            password_hash=generate_password_hash(
-                password
-            ),
-            role="free"
-        )
-        db.session.add(new_user)
-        db.session.commit()
-
-        login_user(new_user)
-        return redirect(url_for("home"))
-
-    return render_template("register.html")
-
-
-@app.route("/logout/")
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("login"))
 
 # ---------------------------------------------------------
 # Home / shopping list
@@ -349,15 +315,6 @@ def home():
             recipe_to_modify = request.form[
                 "button"
             ]
-            recipe = Recipes.query.filter_by(
-                number=int(recipe_to_modify),
-                user_id=current_user.id
-            ).first()
-            if not recipe:
-                return jsonify(
-                    success=False,
-                    error="Recipe not found."
-                ), 404
             return jsonify(
                 recipe_to_modify
             )
@@ -378,16 +335,6 @@ def home():
                     success=False,
                     error="Invalid recipe number."
                 ), 400
-
-            recipe = Recipes.query.filter_by(
-                number=recipe_number,
-                user_id=current_user.id
-            ).first()
-            if not recipe:
-                return jsonify(
-                    success=False,
-                    error="Recipe not found."
-                ), 404
 
             Recipes.query.filter_by(
                 number=recipe_number,
@@ -436,6 +383,7 @@ def home():
         meta_info=meta_info
     )
 
+
 # ---------------------------------------------------------
 # Modify recipe page
 # ---------------------------------------------------------
@@ -448,22 +396,14 @@ def recipetomodify(recipe_to_modify):
     if recipe_to_modify == "favicon.ico":
         return ""
 
-    recipe_number = recipe_to_modify.split(
-        "_",
-        1
-    )[0]
-
-    recipe = Recipes.query.filter_by(
-        number=int(recipe_number),
-        user_id=current_user.id
-    ).first()
-    if not recipe:
-        return redirect(url_for("home"))
-
     previous_ingredients = previousingredients(
         current_user.id
     )
 
+    recipe_number = recipe_to_modify.split(
+        "_",
+        1
+    )[0]
     recipe_name = recipe_to_modify.split(
         "_",
         1
@@ -488,6 +428,7 @@ def recipetomodify(recipe_to_modify):
         previous_ingredients=previous_ingredients
     )
 
+
 # ---------------------------------------------------------
 # Create / update recipe
 # ---------------------------------------------------------
@@ -502,6 +443,34 @@ def newrecipe():
     )
 
     if request.method == "POST":
+        # -------------------------------------------------
+        # Safety check: re-verify free limit on POST.
+        # -------------------------------------------------
+        recipe_number_to_remove = request.form.get(
+            "button",
+            "submit_new_recipe"
+        )
+        is_modification = (
+            recipe_number_to_remove
+            != "submit_new_recipe"
+        )
+
+        if (
+            not is_modification
+            and current_user.role == "free"
+        ):
+            recipe_count = get_user_recipe_count(
+                current_user.id
+            )
+            limit = get_free_recipe_limit()
+            if recipe_count >= limit:
+                return jsonify(
+                    success=False,
+                    error="Free accounts are limited to "
+                    + str(limit)
+                    + " recipes."
+                ), 403
+
         # -------------------------------------------------
         # Recipe name
         # -------------------------------------------------
@@ -563,39 +532,8 @@ def newrecipe():
         ).split(",")
 
         # -------------------------------------------------
-        # Recipe number
-        # -------------------------------------------------
-        recipe_number_to_remove = request.form.get(
-            "button",
-            "submit_new_recipe"
-        )
-
-        is_modification = (
-            recipe_number_to_remove
-            != "submit_new_recipe"
-        )
-
-        # -------------------------------------------------
-        # Recipe limit for free users
-        # -------------------------------------------------
-        if not is_modification:
-            if current_user.role == "free":
-                count = get_user_recipe_count(
-                    current_user.id
-                )
-                if count >= FREE_RECIPE_LIMIT:
-                    return jsonify(
-                        success=False,
-                        error="Free trial limit reached!"
-                              " You can save up to "
-                              + str(FREE_RECIPE_LIMIT)
-                              + " recipes. A full version"
-                              " with unlimited recipes"
-                              " is in development!"
-                    ), 403
-
-        # -------------------------------------------------
-        # Preserve existing position when modifying.
+        # Determine whether this is a new recipe
+        # or a modification.
         # -------------------------------------------------
         if is_modification:
             try:
@@ -607,16 +545,6 @@ def newrecipe():
                     success=False,
                     error="Invalid recipe number."
                 ), 400
-
-            recipe = Recipes.query.filter_by(
-                number=old_recipe_number,
-                user_id=current_user.id
-            ).first()
-            if not recipe:
-                return jsonify(
-                    success=False,
-                    error="Recipe not found."
-                ), 404
 
             existing_sort_order = get_recipe_sort_order(
                 old_recipe_number,
@@ -685,7 +613,6 @@ def newrecipe():
         if len(combined_inputs) > 0:
             for combined_input in combined_inputs:
                 new_upload = Recipes(
-                    user_id=current_user.id,
                     name=recipe_name,
                     days=number_days,
                     complete_meal=complete_meal_input,
@@ -694,26 +621,42 @@ def newrecipe():
                     ingredient=combined_input[0],
                     qualtity=combined_input[1],
                     measure=combined_input[2],
-                    type=combined_input[3]
+                    type=combined_input[3],
+                    user_id=current_user.id
                 )
                 db.session.add(
                     new_upload
                 )
-
             db.session.commit()
+
+    # ---------------------------------------------------------
+    # GET: Block free users who have hit the recipe limit.
+    # ---------------------------------------------------------
+    if current_user.role == "free":
+        recipe_count = get_user_recipe_count(
+            current_user.id
+        )
+        limit = get_free_recipe_limit()
+        if recipe_count >= limit:
+            flash(
+                "Free accounts are limited to "
+                + str(limit)
+                + " recipes. A full version is"
+                + " in development!"
+            )
+            return redirect(url_for("home"))
 
     return render_template(
         "new_recipe.html",
         previous_ingredients=previous_ingredients
     )
 
+
 # ---------------------------------------------------------
-# Get all recipes for a user
+# Get all recipes
 # ---------------------------------------------------------
 def db_all_recipes(user_id):
-    conn = sqlite3.connect(
-        "instance/database.db"
-    )
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -758,6 +701,7 @@ def db_all_recipes(user_id):
 
     return all_recipes, meta_info
 
+
 # ---------------------------------------------------------
 # Group recipe rows
 # ---------------------------------------------------------
@@ -772,20 +716,17 @@ def group_data(data):
         )
         if key not in grouped_data:
             grouped_data[key] = []
-
         grouped_data[key].append(
             item[2:]
         )
-
     return grouped_data
 
+
 # ---------------------------------------------------------
-# Previous ingredients for a user
+# Previous ingredients
 # ---------------------------------------------------------
 def previousingredients(user_id):
-    conn = sqlite3.connect(
-        "instance/database.db"
-    )
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute(
         "SELECT ingredient FROM Recipes"
@@ -794,7 +735,6 @@ def previousingredients(user_id):
     )
     ingredients = cursor.fetchall()
     conn.close()
-
     return [
         re.sub(
             r"[^a-zA-Z\s]",
@@ -805,6 +745,7 @@ def previousingredients(user_id):
             set(ingredients)
         )
     ]
+
 
 # ---------------------------------------------------------
 # Reorder recipes
@@ -848,6 +789,7 @@ def reorder_recipes():
             error=str(error)
         ), 500
 
+
 # ---------------------------------------------------------
 # Ingredient management
 # ---------------------------------------------------------
@@ -882,21 +824,21 @@ def ingredients():
             return jsonify(
                 success=False,
                 error="Original ingredient name"
-                      " is missing"
+                " is missing"
             ), 400
 
         if not new_ingredient:
             return jsonify(
                 success=False,
                 error="Ingredient name cannot"
-                      " be empty"
+                " be empty"
             ), 400
 
         if not new_type:
             return jsonify(
                 success=False,
                 error="Ingredient type cannot"
-                      " be empty"
+                " be empty"
             ), 400
 
         try:
@@ -927,9 +869,9 @@ def ingredients():
                 ingredient,
                 MAX(type) AS type
             FROM Recipes
-            WHERE user_id = :user_id
-                AND ingredient IS NOT NULL
+            WHERE ingredient IS NOT NULL
                 AND TRIM(ingredient) != ''
+                AND user_id = :user_id
             GROUP BY ingredient
             ORDER BY LOWER(ingredient) ASC
         """),
@@ -951,116 +893,498 @@ def ingredients():
         ingredients=ingredients_list
     )
 
+
+# ---------------------------------------------------------
+# Forgot password
+# ---------------------------------------------------------
+@app.route(
+    "/forgot-password/",
+    methods=["GET", "POST"]
+)
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        username = request.form.get(
+            "username", ""
+        ).strip()
+        email = request.form.get(
+            "email", ""
+        ).strip()
+
+        if not username or not email:
+            flash("Both fields are required.")
+            return render_template(
+                "forgot_password.html"
+            )
+
+        user = User.query.filter_by(
+            username=username,
+            email=email
+        ).first()
+
+        if not user:
+            flash(
+                "Username and email do not match"
+                " any account."
+            )
+            return render_template(
+                "forgot_password.html"
+            )
+
+        existing = PasswordResetRequest.query.filter_by(
+            username=username,
+            pending=True
+        ).first()
+
+        if existing:
+            flash(
+                "A reset request is already"
+                " pending. It will be actioned"
+                " soon."
+            )
+            return render_template(
+                "forgot_password.html"
+            )
+
+        new_request = PasswordResetRequest(
+            username=username,
+            email=email,
+            requested_at=datetime.utcnow(),
+            pending=True
+        )
+        db.session.add(new_request)
+        db.session.commit()
+
+        flash(
+            "Thank you. Your password reset"
+            " request has been received and"
+            " will be actioned manually soon."
+        )
+        return redirect(url_for("login"))
+
+    return render_template(
+        "forgot_password.html"
+    )
+
+
 # ---------------------------------------------------------
 # Admin
 # ---------------------------------------------------------
-@app.route("/admin/", methods=["GET"])
+@app.route(
+    "/admin/",
+    methods=["GET", "POST"]
+)
 @login_required
 def admin():
     if current_user.role != "admin":
         return redirect(url_for("home"))
 
+    if request.method == "POST":
+        action = request.form.get("action")
+        target_user_id = request.form.get(
+            "user_id"
+        )
+
+        # -------------------------------------------------
+        # Change role
+        # -------------------------------------------------
+        if action == "change_role":
+            new_role = request.form.get(
+                "new_role"
+            )
+            if new_role in (
+                "free", "member", "admin"
+            ):
+                User.query.filter_by(
+                    id=target_user_id
+                ).update(
+                    {User.role: new_role},
+                    synchronize_session=False
+                )
+                db.session.commit()
+                flash("Role updated.")
+
+        # -------------------------------------------------
+        # Reset password
+        # -------------------------------------------------
+        elif action == "reset_password":
+            new_password = request.form.get(
+                "new_password", ""
+            ).strip()
+            if new_password:
+                User.query.filter_by(
+                    id=target_user_id
+                ).update(
+                    {
+                        User.password_hash:
+                            generate_password_hash(
+                                new_password
+                            )
+                    },
+                    synchronize_session=False
+                )
+                db.session.commit()
+                flash("Password reset.")
+
+        # -------------------------------------------------
+        # Delete user
+        # -------------------------------------------------
+        elif action == "delete_user":
+            user_to_delete = User.query.get(
+                int(target_user_id)
+            )
+            if (
+                user_to_delete
+                and user_to_delete.id
+                != current_user.id
+            ):
+                Recipes.query.filter_by(
+                    user_id=user_to_delete.id
+                ).delete(
+                    synchronize_session=False
+                )
+                PasswordResetRequest.query.filter_by(
+                    username=user_to_delete.username
+                ).delete(
+                    synchronize_session=False
+                )
+                db.session.delete(
+                    user_to_delete
+                )
+                db.session.commit()
+                flash(
+                    "User '"
+                    + user_to_delete.username
+                    + "' and all their data"
+                    + " deleted."
+                )
+            else:
+                flash(
+                    "Cannot delete your own"
+                    " account."
+                )
+
+        # -------------------------------------------------
+        # Update free recipe limit
+        # -------------------------------------------------
+        elif action == "update_recipe_limit":
+            new_limit = request.form.get(
+                "recipe_limit", ""
+            ).strip()
+            try:
+                new_limit_int = int(new_limit)
+                if new_limit_int < 1:
+                    raise ValueError
+                setting = AppSettings.query.filter_by(
+                    key="free_recipe_limit"
+                ).first()
+                if setting:
+                    setting.value = str(
+                        new_limit_int
+                    )
+                else:
+                    db.session.add(
+                        AppSettings(
+                            key="free_recipe_limit",
+                            value=str(
+                                new_limit_int
+                            )
+                        )
+                    )
+                db.session.commit()
+                flash(
+                    "Free recipe limit updated"
+                    " to "
+                    + str(new_limit_int)
+                    + "."
+                )
+            except (ValueError, TypeError):
+                flash("Invalid recipe limit.")
+
+        # -------------------------------------------------
+        # Dismiss reset request
+        # -------------------------------------------------
+        elif action == "dismiss_request":
+            request_id = request.form.get(
+                "request_id"
+            )
+            reset_req = PasswordResetRequest.query.get(
+                int(request_id)
+            )
+            if reset_req:
+                reset_req.pending = False
+                db.session.commit()
+                flash("Reset request dismissed.")
+
+        return redirect(url_for("admin"))
+
+    # -------------------------------------------------
+    # GET: build page data
+    # -------------------------------------------------
     users = User.query.order_by(
         User.id.asc()
     ).all()
-
     user_data = []
     for user in users:
-        recipe_count = db.session.query(
-            db.func.count(
-                db.distinct(Recipes.number)
-            )
-        ).filter_by(
-            user_id=user.id
-        ).scalar() or 0
-
+        recipe_count = get_user_recipe_count(
+            user.id
+        )
         user_data.append({
-            "user": user,
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
             "recipe_count": recipe_count
         })
 
+    current_limit = get_free_recipe_limit()
+
+    reset_requests = PasswordResetRequest.query.filter_by(
+        pending=True
+    ).order_by(
+        PasswordResetRequest.requested_at.desc()
+    ).all()
+
     return render_template(
         "admin.html",
-        user_data=user_data
+        user_data=user_data,
+        current_limit=current_limit,
+        reset_requests=reset_requests
     )
 
-
+# ---------------------------------------------------------
+# Account settings
+# ---------------------------------------------------------
 @app.route(
-    "/admin/update-role/",
-    methods=["POST"]
+    "/account/",
+    methods=["GET", "POST"]
 )
 @login_required
-def admin_update_role():
-    if current_user.role != "admin":
-        return redirect(url_for("home"))
+def account():
+    if request.method == "POST":
+        action = request.form.get("action")
 
-    user_id = request.form.get("user_id")
-    new_role = request.form.get("role")
+        # -------------------------------------------------
+        # Change email
+        # -------------------------------------------------
+        if action == "change_email":
+            new_email = request.form.get(
+                "new_email", ""
+            ).strip()
+            password = request.form.get(
+                "password", ""
+            )
 
-    if not user_id or not new_role:
-        flash("Missing user or role.")
-        return redirect(url_for("admin"))
+            if not new_email or not password:
+                flash("All fields are required.")
+                return redirect(
+                    url_for("account")
+                )
 
-    if new_role not in [
-        "free", "member", "admin"
-    ]:
-        flash("Invalid role.")
-        return redirect(url_for("admin"))
+            if not check_password_hash(
+                current_user.password_hash,
+                password
+            ):
+                flash(
+                    "Incorrect password."
+                )
+                return redirect(
+                    url_for("account")
+                )
 
-    user = User.query.get(int(user_id))
-    if not user:
-        flash("User not found.")
-        return redirect(url_for("admin"))
+            existing = User.query.filter_by(
+                email=new_email
+            ).first()
+            if (
+                existing
+                and existing.id
+                != current_user.id
+            ):
+                flash(
+                    "That email is already in"
+                    " use by another account."
+                )
+                return redirect(
+                    url_for("account")
+                )
 
-    user.role = new_role
-    db.session.commit()
-    flash(
-        user.username + " is now "
-        + new_role + "."
-    )
-    return redirect(url_for("admin"))
+            current_user.email = new_email
+            db.session.commit()
+            flash("Email updated.")
 
+        # -------------------------------------------------
+        # Change password
+        # -------------------------------------------------
+        elif action == "change_password":
+            current_password = request.form.get(
+                "current_password", ""
+            )
+            new_password = request.form.get(
+                "new_password", ""
+            )
+            confirm_password = request.form.get(
+                "confirm_password", ""
+            )
 
+            if (
+                not current_password
+                or not new_password
+                or not confirm_password
+            ):
+                flash("All fields are required.")
+                return redirect(
+                    url_for("account")
+                )
+
+            if not check_password_hash(
+                current_user.password_hash,
+                current_password
+            ):
+                flash("Current password is incorrect.")
+                return redirect(
+                    url_for("account")
+                )
+
+            if new_password != confirm_password:
+                flash(
+                    "New passwords do not match."
+                )
+                return redirect(
+                    url_for("account")
+                )
+
+            if len(new_password) < 4:
+                flash(
+                    "Password must be at least"
+                    " 4 characters."
+                )
+                return redirect(
+                    url_for("account")
+                )
+
+            current_user.password_hash = (
+                generate_password_hash(
+                    new_password
+                )
+            )
+            db.session.commit()
+            flash("Password updated.")
+
+        return redirect(url_for("account"))
+
+    return render_template("account.html")
+
+# ---------------------------------------------------------
+# Login
+# ---------------------------------------------------------
 @app.route(
-    "/admin/reset-password/",
-    methods=["POST"]
+    "/login/",
+    methods=["GET", "POST"]
 )
-@login_required
-def admin_reset_password():
-    if current_user.role != "admin":
+def login():
+    if current_user.is_authenticated:
         return redirect(url_for("home"))
 
-    user_id = request.form.get("user_id")
-    new_password = request.form.get(
-        "new_password"
-    )
+    if request.method == "POST":
+        username = request.form.get(
+            "username", ""
+        ).strip()
+        password = request.form.get(
+            "password", ""
+        )
 
-    if not user_id or not new_password:
-        flash("Missing user or password.")
-        return redirect(url_for("admin"))
+        user = User.query.filter_by(
+            username=username
+        ).first()
 
-    user = User.query.get(int(user_id))
-    if not user:
-        flash("User not found.")
-        return redirect(url_for("admin"))
+        if user and check_password_hash(
+            user.password_hash, password
+        ):
+            login_user(user)
+            return redirect(url_for("home"))
 
-    user.password_hash = generate_password_hash(
-        new_password
-    )
-    db.session.commit()
-    flash(
-        "Password reset for "
-        + user.username + "."
-    )
-    return redirect(url_for("admin"))
+        flash("Invalid username or password.")
+
+    return render_template("login.html")
+
+
+# ---------------------------------------------------------
+# Register
+# ---------------------------------------------------------
+@app.route(
+    "/register/",
+    methods=["GET", "POST"]
+)
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        username = request.form.get(
+            "username", ""
+        ).strip()
+        email = request.form.get(
+            "email", ""
+        ).strip()
+        password = request.form.get(
+            "password", ""
+        )
+
+        if not username or not email or not password:
+            flash("All fields are required.")
+            return render_template(
+                "register.html"
+            )
+
+        if User.query.filter_by(
+            username=username
+        ).first():
+            flash("Username already taken.")
+            return render_template(
+                "register.html"
+            )
+
+        if User.query.filter_by(
+            email=email
+        ).first():
+            flash("Email already registered.")
+            return render_template(
+                "register.html"
+            )
+
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=generate_password_hash(
+                password
+            ),
+            role="free"
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        login_user(new_user)
+        return redirect(url_for("home"))
+
+    return render_template("register.html")
+
+
+# ---------------------------------------------------------
+# Logout
+# ---------------------------------------------------------
+@app.route("/logout/")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
 
 # ---------------------------------------------------------
 # Run application
 # ---------------------------------------------------------
 if __name__ == "__main__":
-    webbrowser.open_new(
-        "http://127.0.0.1:5000/"
-    )
     app.run(
         debug=False
     )

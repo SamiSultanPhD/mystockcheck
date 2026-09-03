@@ -12,6 +12,8 @@
     margin-top: 2em;
     max-height: 70vh;
     overflow-y: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ingredients__table {
@@ -19,6 +21,7 @@
     margin-right: auto;
     border-collapse: collapse;
     width: 80%;
+    min-width: 500px;
 }
 
 .ingredients__table th,

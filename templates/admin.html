@@ -11,7 +11,88 @@
 {% block content %}
 <div class="admin__page">
     <h1>Admin</h1>
-    <p>{{ user_data | length }} registered users</p>
+
+    <!-- ================================================
+         Password Reset Requests
+         ================================================ -->
+    {% if reset_requests %}
+    <div class="admin__reset__requests">
+        <h2>
+            Password Reset Requests
+            ({{ reset_requests | length }})
+        </h2>
+        <table class="admin__table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Requested</th>
+                    <th>Dismiss</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in reset_requests %}
+                <tr>
+                    <td>{{ req.username }}</td>
+                    <td>{{ req.email }}</td>
+                    <td>
+                        {{ req.requested_at.strftime(
+                            '%d %b %Y %H:%M'
+                        ) }}
+                    </td>
+                    <td>
+                        <form method="POST"
+                              style="display:inline;">
+                            <input type="hidden"
+                                   name="action"
+                                   value="dismiss_request">
+                            <input type="hidden"
+                                   name="request_id"
+                                   value="{{ req.id }}">
+                            <button type="submit">
+                                Dismiss
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="admin__hint">
+            Use the password reset field in the
+            users table below, then email the user,
+            then dismiss the request.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- ================================================
+         Settings
+         ================================================ -->
+    <div class="admin__settings">
+        <h2>Settings</h2>
+        <form method="POST"
+              class="admin__settings__form">
+            <input type="hidden"
+                   name="action"
+                   value="update_recipe_limit">
+            <label for="recipe_limit">
+                Free account recipe limit:
+            </label>
+            <input type="number"
+                   id="recipe_limit"
+                   name="recipe_limit"
+                   value="{{ current_limit }}"
+                   min="1"
+                   style="width:60px;">
+            <button type="submit">Save</button>
+        </form>
+    </div>
+
+    <!-- ================================================
+         Users
+         ================================================ -->
+    <h2>Users ({{ user_data | length }})</h2>
 
     <div class="admin__table__container">
         <table class="admin__table">
@@ -21,68 +102,91 @@
                     <th>Email</th>
                     <th>Role</th>
                     <th>Recipes</th>
-                    <th>Change role</th>
-                    <th>Reset password</th>
+                    <th>Change Role</th>
+                    <th>Reset Password</th>
+                    <th>Delete</th>
                 </tr>
             </thead>
             <tbody>
-                {% for entry in user_data %}
+                {% for user in user_data %}
                 <tr>
-                    <td>{{ entry.user.username }}</td>
-                    <td>{{ entry.user.email }}</td>
-                    <td>{{ entry.user.role }}</td>
-                    <td>{{ entry.recipe_count }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>{{ user.recipe_count }}</td>
                     <td>
                         <form method="POST"
-                              action="{{ url_for(
-                                  'admin_update_role'
-                              ) }}"
-                              class="admin__inline__form">
+                              style="display:inline;">
+                            <input type="hidden"
+                                   name="action"
+                                   value="change_role">
                             <input type="hidden"
                                    name="user_id"
-                                   value="{{ entry.user.id }}">
-                            <select name="role">
+                                   value="{{ user.id }}">
+                            <select name="new_role">
                                 <option value="free"
-                                    {% if entry.user.role == 'free' %}
-                                        selected
+                                    {% if user.role == 'free' %}
+                                    selected
                                     {% endif %}>
-                                    Free
+                                    free
                                 </option>
                                 <option value="member"
-                                    {% if entry.user.role == 'member' %}
-                                        selected
+                                    {% if user.role == 'member' %}
+                                    selected
                                     {% endif %}>
-                                    Member
+                                    member
                                 </option>
                                 <option value="admin"
-                                    {% if entry.user.role == 'admin' %}
-                                        selected
+                                    {% if user.role == 'admin' %}
+                                    selected
                                     {% endif %}>
-                                    Admin
+                                    admin
                                 </option>
                             </select>
                             <button type="submit">
-                                Update
+                                Set
                             </button>
                         </form>
                     </td>
                     <td>
                         <form method="POST"
-                              action="{{ url_for(
-                                  'admin_reset_password'
-                              ) }}"
-                              class="admin__inline__form">
+                              style="display:inline;">
+                            <input type="hidden"
+                                   name="action"
+                                   value="reset_password">
                             <input type="hidden"
                                    name="user_id"
-                                   value="{{ entry.user.id }}">
-                            <input type="text"
+                                   value="{{ user.id }}">
+                            <input type="password"
                                    name="new_password"
                                    placeholder="New password"
-                                   required>
+                                   style="width:100px;">
                             <button type="submit">
                                 Reset
                             </button>
                         </form>
+                    </td>
+                    <td>
+                        {% if user.id != current_user.id %}
+                        <form method="POST"
+                              style="display:inline;"
+                              onsubmit="return confirm(
+                                'Delete {{ user.username }} and all their recipes?'
+                              );">
+                            <input type="hidden"
+                                   name="action"
+                                   value="delete_user">
+                            <input type="hidden"
+                                   name="user_id"
+                                   value="{{ user.id }}">
+                            <button type="submit"
+                                    class="admin__delete__button">
+                                Delete
+                            </button>
+                        </form>
+                        {% else %}
+                        &mdash;
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

@@ -2,11 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
     <link rel="stylesheet" type="text/css"
-          href="{{ url_for('static', filename='styles/base.css') }}">
+          href="{{ url_for('static',
+                 filename='styles/base.css') }}">
     {% block styles %}{% endblock %}
+    <h1 class="app__title">Obsidian Leaf Recipes</h1>
     <nav>
         <div class="navigation__container">
             {% if current_user.is_authenticated %}
@@ -25,6 +28,11 @@
                         Ingredients
                     </button>
                 </a>
+                <a href="{{ url_for('account') }}">
+                    <button class="navigation">
+                        Account
+                    </button>
+                </a>
                 {% if current_user.role == 'admin' %}
                     <a href="{{ url_for('admin') }}">
                         <button class="navigation">
@@ -34,7 +42,7 @@
                 {% endif %}
                 <a href="{{ url_for('logout') }}">
                     <button class="navigation">
-                        Logout ({{ current_user.username }})
+                        Logout
                     </button>
                 </a>
             {% else %}
@@ -55,13 +63,11 @@
 <body>
     {% with messages = get_flashed_messages() %}
         {% if messages %}
-            <div class="flash__messages">
-                {% for message in messages %}
-                    <p class="flash__message">
-                        {{ message }}
-                    </p>
-                {% endfor %}
-            </div>
+            {% for message in messages %}
+                <div class="flash__message">
+                    {{ message }}
+                </div>
+            {% endfor %}
         {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}
