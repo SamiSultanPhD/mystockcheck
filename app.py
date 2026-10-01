@@ -239,6 +239,31 @@ def get_next_sort_order(user_id):
     return highest_sort_order + 1
 
 
+def format_recipe_label(name, days, complete_meal):
+    """Builds a display label like 'Chicken Curry (3 days, Complete meal)'."""
+    is_complete = str(complete_meal).strip().lower() in (
+        "yes", "true", "1"
+    )
+    complete_text = (
+        "Complete meal" if is_complete else "Not a complete meal"
+    )
+
+    try:
+        days_value = float(days)
+    except (TypeError, ValueError):
+        days_value = 1.0
+
+    if days_value == int(days_value):
+        days_int = int(days_value)
+        days_text = str(days_int) + (
+            " day" if days_int == 1 else " days"
+        )
+    else:
+        days_text = str(days_value) + " days"
+
+    return f"{name} ({days_text}, {complete_text})"
+
+
 # ---------------------------------------------------------
 # Home / shopping list
 # ---------------------------------------------------------
@@ -282,9 +307,13 @@ def home():
                 ).all()
                 if not recipe_rows:
                     continue
-                recipe_name = recipe_rows[0].name
+                recipe_label = format_recipe_label(
+                    recipe_rows[0].name,
+                    recipe_rows[0].days,
+                    recipe_rows[0].complete_meal
+                )
                 recipe_list.append(
-                    recipe_name
+                    recipe_label
                 )
                 for row in recipe_rows:
                     ingredients.append(
@@ -374,13 +403,14 @@ def home():
                 success=True
             )
 
-    all_recipes, meta_info = db_all_recipes(
+    all_recipes, meta_info, recipe_labels = db_all_recipes(
         current_user.id
     )
     return render_template(
         "shopping_list.html",
         all_recipes=all_recipes,
-        meta_info=meta_info
+        meta_info=meta_info,
+        recipe_labels=recipe_labels
     )
 
 
@@ -409,7 +439,7 @@ def recipetomodify(recipe_to_modify):
         1
     )[1]
 
-    all_recipes, meta_info = db_all_recipes(
+    all_recipes, meta_info, recipe_labels = db_all_recipes(
         current_user.id
     )
     all_recipes = all_recipes[
@@ -683,7 +713,7 @@ def db_all_recipes(user_id):
         WHERE user_id = ?
         ORDER BY sort_order ASC, id ASC
     """, (user_id,))
-    meta_info = cursor.fetchall()
+    meta_rows = cursor.fetchall()
 
     conn.close()
 
@@ -691,15 +721,21 @@ def db_all_recipes(user_id):
         all_recipes
     )
     meta_info = group_data(
-        meta_info
+        meta_rows
     )
 
+    recipe_labels = {}
     for key in meta_info:
         meta_info[key] = list(
             set(meta_info[key])
         )
+        _, name = key.split("_", 1)
+        days, complete_meal = meta_info[key][0]
+        recipe_labels[key] = format_recipe_label(
+            name, days, complete_meal
+        )
 
-    return all_recipes, meta_info
+    return all_recipes, meta_info, recipe_labels
 
 
 # ---------------------------------------------------------

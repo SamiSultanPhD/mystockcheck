@@ -31,8 +31,14 @@ document.addEventListener(
                                 ""
                             );
                     if (text.trim()) {
+                        /*
+                         * Split on commas that separate
+                         * recipes, not commas inside a
+                         * recipe's bracketed info
+                         * (e.g. "(7 days, Complete meal)").
+                         */
                         recipes =
-                            text.split(",").map(
+                            text.split(/,(?![^(]*\))/).map(
                                 function (s) {
                                     return s.trim();
                                 }
